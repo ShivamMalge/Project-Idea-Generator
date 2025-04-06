@@ -1,4 +1,4 @@
-name: Deploy Next.js site to Pages
+name: Build and Deploy Next.js to GitHub Pages
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Detect package manager
@@ -28,47 +28,36 @@ jobs:
             echo "manager=yarn" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
             echo "runner=yarn" >> $GITHUB_OUTPUT
-            exit 0
           elif [ -f "${{ github.workspace }}/package.json" ]; then
             echo "manager=npm" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
             echo "runner=npx --no-install" >> $GITHUB_OUTPUT
-            exit 0
           else
             echo "Unable to determine package manager"
             exit 1
           fi
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: ${{ steps.detect-package-manager.outputs.manager }}
 
-      - name: Setup Pages
+      - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
         with:
           static_site_generator: next
 
-      - name: Restore cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
-
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build with Next.js
-        run: npx --no-install next build && npx --no-install next export
+      - name: Build Next.js app
+        run: npx next build
 
       - name: Disable Jekyll
         run: echo > out/.nojekyll
 
-      - name: Upload artifact
+      - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
